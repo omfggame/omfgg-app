@@ -165,8 +165,8 @@ This setup provides Vercel-style auto-deployments for our Gradio app:
          - name: Push to HuggingFace Production Space
            uses: nateraw/huggingface-sync-action@v0.0.4
            with:
-             github_repo_id: joerawr/omfgg  # CHANGE THIS
-             huggingface_repo_id: YOUR_HF_USERNAME/omfgg  # CHANGE THIS
+             github_repo_id: omfggame/omfgg-app
+             huggingface_repo_id: therawr/omfgg
              repo_type: space
              space_sdk: gradio
              hf_token: ${{ secrets.HF_TOKEN }}
@@ -196,16 +196,17 @@ This setup provides Vercel-style auto-deployments for our Gradio app:
          - name: Push to HuggingFace Dev Space
            uses: nateraw/huggingface-sync-action@v0.0.4
            with:
-             github_repo_id: joerawr/omfgg  # CHANGE THIS
-             huggingface_repo_id: YOUR_HF_USERNAME/omfgg-dev  # CHANGE THIS
+             github_repo_id: omfggame/omfgg-app
+             huggingface_repo_id: therawr/omfgg-dev
              repo_type: space
              space_sdk: gradio
              hf_token: ${{ secrets.HF_TOKEN }}
    ```
 
-4. **Update BOTH workflow files**
-   - Replace `joerawr/omfgg` with your GitHub `username/repo`
-   - Replace `YOUR_HF_USERNAME` with your HuggingFace username
+4. **Paths are already configured:**
+   - GitHub repo: `omfggame/omfgg-app` ✓
+   - HuggingFace production: `therawr/omfgg` ✓
+   - HuggingFace dev: `therawr/omfgg-dev` ✓
    - Production deploys from `main` to `omfgg` Space
    - Dev deploys from `dev` to `omfgg-dev` Space
 
@@ -309,8 +310,8 @@ This setup provides Vercel-style auto-deployments for our Gradio app:
 
 1. **Clone the repo** (if you haven't already)
    ```bash
-   git clone https://github.com/joerawr/omfgg.git
-   cd omfgg
+   git clone https://github.com/omfggame/omfgg-app.git
+   cd omfgg-app
    ```
 
 2. **Set up Python environment**
@@ -415,7 +416,7 @@ If you need your own isolated environment:
              lfs: true
          - uses: nateraw/huggingface-sync-action@v0.0.4
            with:
-             github_repo_id: joerawr/omfgg
+             github_repo_id: omfggame/omfgg-app
              huggingface_repo_id: YOUR_USERNAME/omfgg-alice
              repo_type: space
              space_sdk: gradio
@@ -495,11 +496,11 @@ Main Branch → Production (demo/hackathon)
 
 ## Important URLs
 
-- **Production Space:** https://huggingface.co/spaces/[username]/omfgg
-- **Dev/Staging Space:** https://huggingface.co/spaces/[username]/omfgg-dev
+- **Production Space:** https://huggingface.co/spaces/therawr/omfgg
+- **Dev/Staging Space:** https://huggingface.co/spaces/therawr/omfgg-dev
 - **Personal Space (if using):** https://huggingface.co/spaces/[username]/omfgg-yourname
-- **GitHub Repo:** https://github.com/joerawr/omfgg
-- **GitHub Actions:** https://github.com/joerawr/omfgg/actions
+- **GitHub Repo:** https://github.com/omfggame/omfgg-app
+- **GitHub Actions:** https://github.com/omfggame/omfgg-app/actions
 - **HF Settings:** https://huggingface.co/settings/tokens
 
 ## Troubleshooting
