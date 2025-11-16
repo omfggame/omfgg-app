@@ -3,6 +3,7 @@ import asyncio
 import random
 import json
 import logging
+import html
 from datetime import datetime
 from pathlib import Path
 from agents import (
@@ -25,6 +26,70 @@ logger = logging.getLogger(__name__)
 CACHE_DIR = Path("cache")
 CACHE_DIR.mkdir(exist_ok=True)
 LATEST_CACHE_FILE = CACHE_DIR / "latest_cache.json"
+
+# Template directory
+TEMPLATE_DIR = Path("templates")
+
+def render_game_iframe(game_json_str):
+    """
+    Load the tap_to_avoid.html template, populate it with game data,
+    and return an iframe element using srcdoc.
+
+    Args:
+        game_json_str: JSON string from Composer Agent
+
+    Returns:
+        HTML string containing iframe with the game
+    """
+    try:
+        # Parse the game JSON (handle both dict and string)
+        if isinstance(game_json_str, dict):
+            game_data = game_json_str
+        else:
+            game_data = json.loads(game_json_str)
+
+        # Debug log the game data
+        logger.info(f"Rendering game with data: {json.dumps(game_data, indent=2)}")
+
+        # Load the template
+        template_path = TEMPLATE_DIR / "tap_to_avoid.html"
+        if not template_path.exists():
+            return f"<p>Error: Template not found at {template_path}</p>"
+
+        with open(template_path, 'r') as f:
+            template = f.read()
+
+        # Replace template variables with game data
+        html_content = template.replace('{{player_emoji}}', game_data.get('player_emoji', '😀'))
+        html_content = html_content.replace('{{obstacle_emoji}}', game_data.get('obstacle_emoji', '💣'))
+        html_content = html_content.replace('{{background_color}}', game_data.get('background_color', '#87CEEB'))
+        html_content = html_content.replace('{{win_message}}', game_data.get('win_message', 'You Win!'))
+        html_content = html_content.replace('{{lose_message}}', game_data.get('lose_message', 'Game Over!'))
+
+        # Escape the HTML for use in srcdoc attribute
+        escaped_html = html.escape(html_content, quote=True)
+
+        # Create iframe with srcdoc
+        iframe_html = f'''
+        <div style="width: 100%; max-width: 420px; margin: 0 auto;">
+            <iframe
+                srcdoc="{escaped_html}"
+                width="100%"
+                height="700px"
+                style="border: none; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);"
+                sandbox="allow-scripts"
+            ></iframe>
+        </div>
+        '''
+
+        return iframe_html
+
+    except json.JSONDecodeError as e:
+        logger.error(f"JSON decode error in render_game_iframe: {str(e)}")
+        return f"<p>Error: Invalid game JSON - {str(e)}</p>"
+    except Exception as e:
+        logger.error(f"Error rendering game iframe: {str(e)}", exc_info=True)
+        return f"<p>Error rendering game: {str(e)}</p>"
 
 def save_cache(sub_agent_outputs, mode, user_inputs):
     """Save sub-agent results to JSON file for persistence across restarts"""
@@ -280,37 +345,11 @@ async def generate_game_real(mode, field1, field2, field3, field4, field5, cache
 
         status += "\n✅ **Game generation complete!**\n\n"
 
-        # Format output
-        game_preview = f"""
-# 🎮 Your {mode} Game
-
-## Generated GameDef
-
-```json
-{game_def}
-```
-
-## User Inputs
-"""
-        for field_name, value in user_inputs.items():
-            game_preview += f"- **{field_name}**: {value}\n"
-
-        game_preview += f"""
-## Shareable Link
-`omfgg.com/{slug}`
-
-## Sub-Agent Outputs (Cached)
-The responses from {len(agent_names)} sub-agents are now cached. You can:
-- Re-run the Composer with different synthesis strategies
-- Iterate on the GameDef without re-calling the LLMs
-- Save on API costs!
-
----
-*Powered by {provider.upper()} sub-agents + Claude Composer*
-"""
+        # Render the game in an iframe
+        game_iframe = render_game_iframe(game_def)
 
         logger.info("Game generation completed successfully")
-        yield status, game_preview, sub_agent_outputs, json.dumps(debug_data, indent=2)
+        yield status, game_iframe, sub_agent_outputs, json.dumps(debug_data, indent=2)
 
     except Exception as e:
         logger.error(f"Error during game generation: {str(e)}", exc_info=True)
@@ -354,25 +393,12 @@ async def regenerate_gamedef(mode, cached_results):
     slug = f"{mode.lower()}-{random.randint(1000, 9999)}"
     debug_data["slug"] = slug
 
-    game_preview = f"""
-# 🎮 Regenerated GameDef
-
-## New GameDef (from cached sub-agent results)
-
-```json
-{game_def}
-```
-
-## Shareable Link
-`omfgg.com/{slug}`
-
----
-*Regenerated using cached sub-agent outputs - no additional API calls to sub-agents!*
-"""
+    # Render the game in an iframe
+    game_iframe = render_game_iframe(game_def)
 
     status += "\n✅ **GameDef regenerated!**\n"
     logger.info("GameDef regeneration completed successfully")
-    yield status, game_preview, json.dumps(debug_data, indent=2)
+    yield status, game_iframe, json.dumps(debug_data, indent=2)
 
 
 # Build the Gradio interface
@@ -443,7 +469,7 @@ with gr.Blocks(theme=gr.themes.Soft(), title="OMFGG - Game Generator") as demo:
     status_output = gr.Markdown()
 
     gr.Markdown("## 🎮 Your Game")
-    game_output = gr.Markdown()
+    game_output = gr.HTML()
 
     # Debug Output Section
     with gr.Accordion("Debug Output (Sub-Agent Results)", open=False):

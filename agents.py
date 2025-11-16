@@ -278,7 +278,7 @@ class ComposerAgent:
 
     def compose(self, mode, sub_agent_outputs):
         """Compose final GameDef from all sub-agent outputs"""
-        prompt = f"""You are the Composer Agent. Synthesize the following sub-agent outputs into a single, coherent GameDef JSON.
+        prompt = f"""You are the Composer Agent. Synthesize the following sub-agent outputs into a flat JSON structure for a playable game.
 
 Game Mode: {mode}
 
@@ -287,50 +287,71 @@ Sub-Agent Outputs:
 
 IMPORTANT CONSTRAINTS:
 - Keep it SIMPLE and FEASIBLE - this is a micro-game (5-30 seconds)
-- ONE core mechanic only (tap, swipe, hold, drag - pick ONE)
+- GAME TYPE MUST BE "tap_to_avoid" (tap to move horizontally, avoid falling obstacles)
+- Adapt the theme to fit this mechanic, regardless of what the sub-agents suggested
 - NO mini-games within games
 - NO complex multi-stage interactions
-- NO elaborate progression systems
 - Speed of development is the priority
 - Think mobile-friendly, single-screen, instant-play
 
-Create a final GameDef with:
-- Unified theme and coherence
-- All elements working together
-- Clear game title
-- Complete game structure
-- Shareable description
-- REALISTIC scope for rapid development
+EMOJI EXTRACTION:
+- Extract emoji characters from sub-agent outputs (character for player, obstacle for obstacles)
+- Look for emoji in the visual descriptions or create appropriate ones based on the theme
+- Use actual emoji characters (e.g., "☁️", "💨", "🍌"), not text descriptions
 
-Return as valid JSON with this structure:
+BACKGROUND COLOR:
+- Select a hex color that matches the theme and vibe from the style agent's color palette
+- Choose the most appropriate background color that enhances the game's atmosphere
+
+WIN/LOSE MESSAGES:
+- Generate short, thematic messages based on the game context
+- Should reflect the game's vibe (funny, relaxing, scary, etc.)
+- Keep them brief (3-8 words each)
+
+Return as valid JSON with this EXACT flat structure:
 {{
+  "game_type": "tap_to_avoid",
   "title": "Game Title",
-  "mode": "{mode}",
-  "description": "Short description",
-  "character": {{...}},
-  "mechanics": {{...}},
-  "style": {{...}},
-  "challenge": {{...}},
-  "environment": {{...}},
-  "special": {{...}},
-  "duration_seconds": 15,
-  "slug": "game-slug"
+  "player_emoji": "☁️",
+  "obstacle_emoji": "💨",
+  "background_color": "#FFB366",
+  "win_message": "You floated peacefully!",
+  "lose_message": "Too much wind!"
 }}
 
-Ensure all elements are coherent and work together! Keep it simple and buildable!"""
+IMPORTANT:
+- game_type should match the mode and mechanic (e.g., "tap_to_avoid", "swipe_to_collect", "hold_to_charge")
+- All emoji must be actual Unicode emoji characters
+- background_color must be a valid hex color
+- Ensure all elements are coherent and work together!"""
 
         try:
             message = anthropic_client.messages.create(
                 model=COMPOSER_MODEL,  # Use higher quality model
-                max_tokens=2000,
+                max_tokens=1000,
                 temperature=0.3,  # Lower temp for structured output
                 messages=[
                     {"role": "user", "content": prompt}
                 ]
             )
-            return message.content[0].text
+
+            # Parse the JSON response
+            response_text = message.content[0].text
+
+            # Try to extract JSON if wrapped in markdown code blocks
+            if "```json" in response_text:
+                response_text = response_text.split("```json")[1].split("```")[0].strip()
+            elif "```" in response_text:
+                response_text = response_text.split("```")[1].split("```")[0].strip()
+
+            # Parse and return as dictionary
+            game_json = json.loads(response_text)
+            return game_json
+
+        except json.JSONDecodeError as e:
+            return {"error": f"JSON parsing error: {str(e)}", "raw_response": response_text}
         except Exception as e:
-            return f"Error in Composer: {str(e)}"
+            return {"error": f"Error in Composer: {str(e)}"}
 
 
 # Demonstration functions
@@ -458,7 +479,7 @@ async def demo_full_pipeline(provider="openai"):
     game_def = composer.compose(mode, sub_agent_outputs)
 
     print("\nFinal GameDef:")
-    print(game_def)
+    print(json.dumps(game_def, indent=2))
     print()
 
 
