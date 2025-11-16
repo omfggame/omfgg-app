@@ -19,7 +19,7 @@ jobs:
         uses: nateraw/huggingface-sync-action@v0.0.4
         with:
           github_repo_id: omfggame/omfgg-app
-          huggingface_repo_id: therawr/omfgg-dev
+          huggingface_repo_id: omfggame/omfgg-dev
           repo_type: space
           space_sdk: gradio
           hf_token: ${{ secrets.HF_TOKEN }}

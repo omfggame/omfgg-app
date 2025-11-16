@@ -496,11 +496,12 @@ Main Branch → Production (demo/hackathon)
 
 ## Important URLs
 
-- **Production Space:** https://huggingface.co/spaces/therawr/omfgg
-- **Dev/Staging Space:** https://huggingface.co/spaces/therawr/omfgg-dev
+- **Production Space:** https://huggingface.co/spaces/omfggame/omfgg
+- **Dev/Staging Space:** https://huggingface.co/spaces/omfggame/omfgg-dev
 - **Personal Space (if using):** https://huggingface.co/spaces/[username]/omfgg-yourname
 - **GitHub Repo:** https://github.com/omfggame/omfgg-app
 - **GitHub Actions:** https://github.com/omfggame/omfgg-app/actions
+- **HF Organization:** https://huggingface.co/omfggame
 - **HF Settings:** https://huggingface.co/settings/tokens
 
 ## Troubleshooting
