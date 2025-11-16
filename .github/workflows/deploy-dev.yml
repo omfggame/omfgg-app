@@ -18,4 +18,4 @@ jobs:
       - name: Push to HuggingFace Dev Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: git push https://omfggame:$HF_TOKEN@huggingface.co/spaces/omfggame/omfgg-dev main
+        run: git push https://omfggame:$HF_TOKEN@huggingface.co/spaces/omfggame/omfgg-dev HEAD:main
