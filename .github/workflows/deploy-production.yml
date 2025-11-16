@@ -16,7 +16,7 @@ jobs:
           lfs: true
 
       - name: Push to HuggingFace Production Space
-        uses: nateraw/huggingface-sync-action@v0.0.4
+        uses: nateraw/huggingface-sync-action@v0.1.0
         with:
           github_repo_id: omfggame/omfgg-app
           huggingface_repo_id: omfggame/omfgg
