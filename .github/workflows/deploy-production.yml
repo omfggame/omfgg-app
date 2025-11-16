@@ -16,10 +16,6 @@ jobs:
           lfs: true
 
       - name: Push to HuggingFace Production Space
-        uses: nateraw/huggingface-sync-action@v0.1.0
-        with:
-          github_repo_id: omfggame/omfgg-app
-          huggingface_repo_id: omfggame/omfgg
-          repo_type: space
-          space_sdk: gradio
-          hf_token: ${{ secrets.HF_TOKEN }}
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: git push https://omfggame:$HF_TOKEN@huggingface.co/spaces/omfggame/omfgg main
