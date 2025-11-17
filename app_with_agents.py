@@ -30,6 +30,19 @@ LATEST_CACHE_FILE = CACHE_DIR / "latest_cache.json"
 # Template directory
 TEMPLATE_DIR = Path("templates")
 
+def parse_game_type_choice(choice_str):
+    """Convert UI choice to game template name"""
+    mapping = {
+        "🎲 Random": "random",
+        "1️⃣ Which Doesn't Belong?": "which_doesnt_belong",
+        "2️⃣ True or False?": "true_or_false",
+        "3️⃣ Memory Match": "memory_match",
+        "4️⃣ Emoji Ancestry": "emoji_ancestry",
+        "5️⃣ Sort the Sequence": "sort_sequence",
+        "6️⃣ Emoji Rebus": "emoji_rebus"
+    }
+    return mapping.get(choice_str, "random")
+
 def render_game_iframe(game_json_str):
     """
     Load the tap_to_avoid.html template, populate it with game data,
@@ -51,8 +64,11 @@ def render_game_iframe(game_json_str):
         # Debug log the game data
         logger.info(f"Rendering game with data: {json.dumps(game_data, indent=2)}")
 
-        # Load the template
-        template_path = TEMPLATE_DIR / "tap_to_avoid.html"
+        # Load the template based on game_type
+        game_type = game_data.get('game_type', 'tap_to_avoid')
+        template_filename = f"{game_type}.html"
+        template_path = TEMPLATE_DIR / template_filename
+
         if not template_path.exists():
             return f"<p>Error: Template not found at {template_path}</p>"
 
@@ -60,11 +76,28 @@ def render_game_iframe(game_json_str):
             template = f.read()
 
         # Replace template variables with game data
-        html_content = template.replace('{{player_emoji}}', game_data.get('player_emoji', '😀'))
-        html_content = html_content.replace('{{obstacle_emoji}}', game_data.get('obstacle_emoji', '💣'))
-        html_content = html_content.replace('{{background_color}}', game_data.get('background_color', '#87CEEB'))
+        # Common variables (all games)
+        html_content = template.replace('{{background_color}}', game_data.get('background_color', '#87CEEB'))
         html_content = html_content.replace('{{win_message}}', game_data.get('win_message', 'You Win!'))
         html_content = html_content.replace('{{lose_message}}', game_data.get('lose_message', 'Game Over!'))
+
+        # Action game specific variables
+        html_content = html_content.replace('{{player_emoji}}', game_data.get('player_emoji', '😀'))
+        html_content = html_content.replace('{{obstacle_emoji}}', game_data.get('obstacle_emoji', '💣'))
+
+        # Intellectual game specific variables (serialize to JSON for JavaScript)
+        if 'puzzles' in game_data:
+            html_content = html_content.replace('{{puzzles}}', json.dumps(game_data['puzzles']))
+        if 'rounds' in game_data:
+            html_content = html_content.replace('{{rounds}}', json.dumps(game_data['rounds']))
+        if 'questions' in game_data:
+            html_content = html_content.replace('{{questions}}', json.dumps(game_data['questions']))
+        if 'emoji_pairs' in game_data:
+            html_content = html_content.replace('{{emoji_pairs}}', json.dumps(game_data['emoji_pairs']))
+
+        # Emoji Ancestry game (full game_data object as JSON)
+        if game_type == 'emoji_ancestry':
+            html_content = html_content.replace('{{game_data}}', json.dumps(game_data))
 
         # Escape the HTML for use in srcdoc attribute
         escaped_html = html.escape(html_content, quote=True)
@@ -193,7 +226,7 @@ def update_fields(mode):
     return updates
 
 
-async def generate_game_real(mode, field1, field2, field3, field4, field5, cached_results, provider="openai"):
+async def generate_game_real(mode, field1, field2, field3, field4, field5, cached_results, provider="openai", game_type_choice="🎲 Random"):
     """Real game generation with LLM agents and caching"""
 
     logger.info(f"Starting game generation - Mode: {mode}, Provider: {provider}")
@@ -220,6 +253,10 @@ async def generate_game_real(mode, field1, field2, field3, field4, field5, cache
     yield status, None, cached_results, json.dumps(debug_data, indent=2)
 
     await asyncio.sleep(0.3)
+
+    # Parse game type choice
+    selected_game_type = parse_game_type_choice(game_type_choice)
+    logger.info(f"Selected game type: {selected_game_type}")
 
     # Create agents
     agents = {
@@ -324,7 +361,7 @@ async def generate_game_real(mode, field1, field2, field3, field4, field5, cache
         await asyncio.sleep(0.3)
 
         composer = ComposerAgent()
-        game_def = composer.compose(mode, sub_agent_outputs)
+        game_def = composer.compose(mode, sub_agent_outputs, game_type=selected_game_type)
 
         debug_data["composer_output"] = game_def
         logger.info(f"Composer Agent completed - Generated GameDef")
@@ -358,7 +395,7 @@ async def generate_game_real(mode, field1, field2, field3, field4, field5, cache
         yield error_status, None, cached_results, json.dumps(debug_data, indent=2)
 
 
-async def regenerate_gamedef(mode, cached_results):
+async def regenerate_gamedef(mode, cached_results, game_type_choice="🎲 Random"):
     """Regenerate GameDef using cached sub-agent results (saves API calls!)"""
     debug_data = {"mode": mode, "cached_results_present": bool(cached_results)}
 
@@ -378,12 +415,16 @@ async def regenerate_gamedef(mode, cached_results):
 
     await asyncio.sleep(0.3)
 
+    # Parse game type choice
+    selected_game_type = parse_game_type_choice(game_type_choice)
+    logger.info(f"Regenerating with game type: {selected_game_type}")
+
     logger.info("Launching Composer Agent for regeneration")
     status += "🎼 **Launching Composer Agent**\n"
     yield status, None, json.dumps(debug_data, indent=2)
 
     composer = ComposerAgent()
-    game_def = composer.compose(mode, cached_results)
+    game_def = composer.compose(mode, cached_results, game_type=selected_game_type)
 
     debug_data["composer_output"] = game_def
     logger.info("Composer Agent completed - GameDef regenerated")
@@ -429,6 +470,22 @@ with gr.Blocks(theme=gr.themes.Soft(), title="OMFGG - Game Generator") as demo:
             value="openai",
             label="🤖 AI Provider for Sub-Agents",
             info="OpenAI (GPT-4o mini) or Anthropic (Claude Haiku 4.5)"
+        )
+
+    with gr.Row():
+        game_type_selector = gr.Radio(
+            choices=[
+                "🎲 Random",
+                "1️⃣ Which Doesn't Belong?",
+                "2️⃣ True or False?",
+                "3️⃣ Memory Match",
+                "4️⃣ Emoji Ancestry",
+                "5️⃣ Sort the Sequence",
+                "6️⃣ Emoji Rebus"
+            ],
+            value="🎲 Random",
+            label="🎮 Game Type (Intellectual Games)",
+            info="Choose a specific game type or let AI pick randomly"
         )
 
     # Adaptive Mad-Lib Form
@@ -489,13 +546,13 @@ with gr.Blocks(theme=gr.themes.Soft(), title="OMFGG - Game Generator") as demo:
 
     generate_btn.click(
         fn=generate_game_real,
-        inputs=[mode_selector, *field_textboxes, cached_state, provider_selector],
+        inputs=[mode_selector, *field_textboxes, cached_state, provider_selector, game_type_selector],
         outputs=[status_output, game_output, cached_state, debug_output]
     )
 
     regenerate_btn.click(
         fn=regenerate_gamedef,
-        inputs=[mode_selector, cached_state],
+        inputs=[mode_selector, cached_state, game_type_selector],
         outputs=[status_output, game_output, debug_output]
     )
 

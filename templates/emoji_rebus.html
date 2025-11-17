@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emoji Rebus</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: {{background_color}};
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .game-container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .timer {
+            color: #e74c3c;
+        }
+
+        .score {
+            color: #27ae60;
+        }
+
+        .puzzle-counter {
+            color: #3498db;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+
+        .emoji-display {
+            text-align: center;
+            font-size: 60px;
+            margin: 30px 0;
+            min-height: 80px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .emoji-display span {
+            animation: bounceIn 0.5s ease-out;
+        }
+
+        @keyframes bounceIn {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.1);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .input-section {
+            margin: 20px 0;
+        }
+
+        .answer-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            border: 3px solid #3498db;
+            border-radius: 10px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .answer-input:focus {
+            border-color: #2980b9;
+        }
+
+        .answer-input.correct {
+            border-color: #27ae60;
+            background-color: #d5f4e6;
+        }
+
+        .answer-input.incorrect {
+            border-color: #e74c3c;
+            background-color: #fadbd8;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .submit-btn {
+            background: #3498db;
+            color: white;
+        }
+
+        .submit-btn:hover {
+            background: #2980b9;
+        }
+
+        .submit-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .skip-btn {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .skip-btn:hover {
+            background: #7f8c8d;
+        }
+
+        .hint-btn {
+            background: #f39c12;
+            color: white;
+        }
+
+        .hint-btn:hover {
+            background: #e67e22;
+        }
+
+        .hint-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .feedback {
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            min-height: 30px;
+            margin: 10px 0;
+        }
+
+        .feedback.correct {
+            color: #27ae60;
+            animation: pulse 0.5s;
+        }
+
+        .feedback.incorrect {
+            color: #e74c3c;
+            animation: shake 0.5s;
+        }
+
+        .feedback.hint {
+            color: #f39c12;
+            font-size: 16px;
+            font-style: italic;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+        }
+
+        @keyframes shake {
+            0%, 100% {
+                transform: translateX(0);
+            }
+            25% {
+                transform: translateX(-10px);
+            }
+            75% {
+                transform: translateX(10px);
+            }
+        }
+
+        .game-over {
+            display: none;
+            text-align: center;
+        }
+
+        .game-over.show {
+            display: block;
+        }
+
+        .game-over h2 {
+            font-size: 36px;
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+
+        .game-over .final-score {
+            font-size: 24px;
+            margin: 20px 0;
+            color: #27ae60;
+        }
+
+        .game-over .message {
+            font-size: 18px;
+            color: #7f8c8d;
+            margin: 10px 0;
+        }
+
+        .play-area {
+            display: block;
+        }
+
+        .play-area.hide {
+            display: none;
+        }
+
+        .hint-display {
+            text-align: center;
+            font-size: 14px;
+            color: #f39c12;
+            font-style: italic;
+            min-height: 20px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="play-area" id="playArea">
+            <div class="header">
+                <div class="timer" id="timer">Time: 30s</div>
+                <div class="score" id="score">Score: 0</div>
+            </div>
+
+            <div class="puzzle-counter" id="puzzleCounter">Puzzle 1 of 3</div>
+
+            <div class="emoji-display" id="emojiDisplay"></div>
+
+            <div class="hint-display" id="hintDisplay"></div>
+
+            <div class="feedback" id="feedback"></div>
+
+            <div class="input-section">
+                <input
+                    type="text"
+                    class="answer-input"
+                    id="answerInput"
+                    placeholder="Type your answer..."
+                    autocomplete="off"
+                    autofocus
+                >
+            </div>
+
+            <div class="buttons">
+                <button class="submit-btn" id="submitBtn">Submit</button>
+                <button class="hint-btn" id="hintBtn">Hint (-1)</button>
+                <button class="skip-btn" id="skipBtn">Skip</button>
+            </div>
+        </div>
+
+        <div class="game-over" id="gameOver">
+            <h2 id="gameOverTitle">Game Over!</h2>
+            <div class="final-score" id="finalScore">Final Score: 0</div>
+            <div class="message" id="gameOverMessage"></div>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        const GAME_DURATION = 30;
+        const TOTAL_PUZZLES = 3;
+        const CORRECT_POINTS = 2;
+        const HINT_PENALTY = 1;
+
+        let puzzles = {{puzzles}};
+        let currentPuzzleIndex = 0;
+        let score = 0;
+        let timeRemaining = GAME_DURATION;
+        let timerInterval = null;
+        let hintShown = false;
+
+        // DOM elements
+        const timerEl = document.getElementById('timer');
+        const scoreEl = document.getElementById('score');
+        const puzzleCounterEl = document.getElementById('puzzleCounter');
+        const emojiDisplayEl = document.getElementById('emojiDisplay');
+        const hintDisplayEl = document.getElementById('hintDisplay');
+        const feedbackEl = document.getElementById('feedback');
+        const answerInputEl = document.getElementById('answerInput');
+        const submitBtn = document.getElementById('submitBtn');
+        const hintBtn = document.getElementById('hintBtn');
+        const skipBtn = document.getElementById('skipBtn');
+        const playAreaEl = document.getElementById('playArea');
+        const gameOverEl = document.getElementById('gameOver');
+        const gameOverTitleEl = document.getElementById('gameOverTitle');
+        const finalScoreEl = document.getElementById('finalScore');
+        const gameOverMessageEl = document.getElementById('gameOverMessage');
+
+        // Initialize game
+        function init() {
+            loadPuzzle(currentPuzzleIndex);
+            startTimer();
+            answerInputEl.focus();
+        }
+
+        // Load puzzle
+        function loadPuzzle(index) {
+            if (index >= puzzles.length) {
+                endGame();
+                return;
+            }
+
+            const puzzle = puzzles[index];
+            hintShown = false;
+
+            // Update puzzle counter
+            puzzleCounterEl.textContent = `Puzzle ${index + 1} of ${TOTAL_PUZZLES}`;
+
+            // Display emoji sequence
+            emojiDisplayEl.innerHTML = '';
+            puzzle.emoji_sequence.forEach((emoji, i) => {
+                const span = document.createElement('span');
+                span.textContent = emoji;
+                span.style.animationDelay = `${i * 0.1}s`;
+                emojiDisplayEl.appendChild(span);
+            });
+
+            // Reset input and feedback
+            answerInputEl.value = '';
+            answerInputEl.className = 'answer-input';
+            feedbackEl.textContent = '';
+            feedbackEl.className = 'feedback';
+            hintDisplayEl.textContent = '';
+            hintBtn.disabled = false;
+            answerInputEl.focus();
+        }
+
+        // Check answer
+        function checkAnswer() {
+            const userAnswer = answerInputEl.value.trim().toLowerCase();
+
+            if (!userAnswer) {
+                return;
+            }
+
+            const puzzle = puzzles[currentPuzzleIndex];
+            const isCorrect = puzzle.accepted_answers.some(answer =>
+                userAnswer === answer.toLowerCase() ||
+                userAnswer.includes(answer.toLowerCase()) ||
+                answer.toLowerCase().includes(userAnswer)
+            );
+
+            if (isCorrect) {
+                handleCorrect();
+            } else {
+                handleIncorrect();
+            }
+        }
+
+        // Handle correct answer
+        function handleCorrect() {
+            score += CORRECT_POINTS;
+            updateScore();
+
+            answerInputEl.className = 'answer-input correct';
+            feedbackEl.textContent = 'Correct!';
+            feedbackEl.className = 'feedback correct';
+
+            submitBtn.disabled = true;
+            skipBtn.disabled = true;
+            hintBtn.disabled = true;
+
+            setTimeout(() => {
+                currentPuzzleIndex++;
+                submitBtn.disabled = false;
+                skipBtn.disabled = false;
+                loadPuzzle(currentPuzzleIndex);
+            }, 1500);
+        }
+
+        // Handle incorrect answer
+        function handleIncorrect() {
+            answerInputEl.className = 'answer-input incorrect';
+            feedbackEl.textContent = 'Try again!';
+            feedbackEl.className = 'feedback incorrect';
+
+            setTimeout(() => {
+                answerInputEl.className = 'answer-input';
+                feedbackEl.textContent = '';
+                feedbackEl.className = 'feedback';
+            }, 1000);
+        }
+
+        // Show hint
+        function showHint() {
+            if (hintShown) return;
+
+            const puzzle = puzzles[currentPuzzleIndex];
+            hintDisplayEl.textContent = `Hint: ${puzzle.hint}`;
+            score = Math.max(0, score - HINT_PENALTY);
+            updateScore();
+            hintShown = true;
+            hintBtn.disabled = true;
+
+            feedbackEl.textContent = `Hint revealed! -${HINT_PENALTY} point`;
+            feedbackEl.className = 'feedback hint';
+
+            setTimeout(() => {
+                if (feedbackEl.classList.contains('hint')) {
+                    feedbackEl.textContent = '';
+                    feedbackEl.className = 'feedback';
+                }
+            }, 2000);
+        }
+
+        // Skip puzzle
+        function skipPuzzle() {
+            feedbackEl.textContent = 'Skipped!';
+            feedbackEl.className = 'feedback';
+            feedbackEl.style.color = '#95a5a6';
+
+            submitBtn.disabled = true;
+            skipBtn.disabled = true;
+            hintBtn.disabled = true;
+
+            setTimeout(() => {
+                currentPuzzleIndex++;
+                submitBtn.disabled = false;
+                skipBtn.disabled = false;
+                loadPuzzle(currentPuzzleIndex);
+            }, 1000);
+        }
+
+        // Timer
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                updateTimer();
+
+                if (timeRemaining <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function updateTimer() {
+            timerEl.textContent = `Time: ${timeRemaining}s`;
+            if (timeRemaining <= 10) {
+                timerEl.style.color = '#e74c3c';
+                timerEl.style.fontSize = '20px';
+            }
+        }
+
+        function updateScore() {
+            scoreEl.textContent = `Score: ${score}`;
+        }
+
+        // End game
+        function endGame() {
+            clearInterval(timerInterval);
+            playAreaEl.classList.add('hide');
+            gameOverEl.classList.add('show');
+
+            finalScoreEl.textContent = `Final Score: ${score}`;
+
+            const maxScore = TOTAL_PUZZLES * CORRECT_POINTS;
+            if (score >= maxScore * 0.8) {
+                gameOverTitleEl.textContent = '{{win_message}}';
+                gameOverMessageEl.textContent = 'Amazing! You decoded most puzzles!';
+            } else if (score >= maxScore * 0.5) {
+                gameOverTitleEl.textContent = 'Good Job!';
+                gameOverMessageEl.textContent = 'You decoded some tricky puzzles!';
+            } else {
+                gameOverTitleEl.textContent = '{{lose_message}}';
+                gameOverMessageEl.textContent = 'Keep practicing your rebus skills!';
+            }
+        }
+
+        // Event listeners
+        submitBtn.addEventListener('click', checkAnswer);
+        hintBtn.addEventListener('click', showHint);
+        skipBtn.addEventListener('click', skipPuzzle);
+
+        answerInputEl.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                checkAnswer();
+            }
+        });
+
+        answerInputEl.addEventListener('input', () => {
+            answerInputEl.className = 'answer-input';
+        });
+
+        // Start game
+        init();
+    </script>
+</body>
+</html>

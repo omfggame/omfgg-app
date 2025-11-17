@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fill in the Blank</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', 'Arial Rounded MT Bold', cursive, sans-serif;
+            background: {{background_color}};
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 10px;
+            overflow: hidden;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 500px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .player-emoji {
+            font-size: 48px;
+            animation: bounce 1s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .stats {
+            display: flex;
+            gap: 15px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .score {
+            color: #28a745;
+        }
+
+        .timer {
+            color: #ff6b6b;
+        }
+
+        .question-counter {
+            color: #6c757d;
+            font-size: 16px;
+        }
+
+        .sentence-area {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .sentence {
+            font-size: 22px;
+            line-height: 1.5;
+            font-weight: bold;
+        }
+
+        .blank {
+            display: inline-block;
+            min-width: 60px;
+            padding: 5px 15px;
+            background: rgba(255, 255, 255, 0.3);
+            border-bottom: 3px dashed white;
+            border-radius: 8px;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .choices {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .choice-btn {
+            background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+            border: none;
+            border-radius: 15px;
+            padding: 30px 10px;
+            font-size: 48px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .choice-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .choice-btn:active {
+            transform: scale(0.95);
+        }
+
+        .choice-btn.correct {
+            background: linear-gradient(135deg, #55efc4 0%, #00b894 100%);
+            animation: correctPulse 0.5s ease;
+        }
+
+        .choice-btn.wrong {
+            background: linear-gradient(135deg, #ff7675 0%, #d63031 100%);
+            animation: shake 0.5s ease;
+        }
+
+        .choice-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        @keyframes correctPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .feedback {
+            min-height: 80px;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 16px;
+            line-height: 1.4;
+            transition: all 0.3s ease;
+        }
+
+        .feedback.correct {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            color: #155724;
+            border: 2px solid #28a745;
+        }
+
+        .feedback.wrong {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            color: #721c24;
+            border: 2px solid #dc3545;
+        }
+
+        .feedback.hidden {
+            opacity: 0;
+            height: 0;
+            min-height: 0;
+            padding: 0;
+        }
+
+        .game-over {
+            display: none;
+            text-align: center;
+            padding: 30px;
+        }
+
+        .game-over.show {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .game-over h2 {
+            font-size: 36px;
+            margin-bottom: 20px;
+            color: #2d3436;
+        }
+
+        .final-score {
+            font-size: 48px;
+            margin: 20px 0;
+            color: #6c5ce7;
+        }
+
+        .game-message {
+            font-size: 20px;
+            margin-bottom: 30px;
+            color: #636e72;
+        }
+
+        .restart-btn {
+            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 15px 40px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .restart-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .game-play {
+            display: block;
+        }
+
+        .game-play.hidden {
+            display: none;
+        }
+
+        .timer.warning {
+            animation: timerBlink 0.5s ease-in-out infinite;
+        }
+
+        @keyframes timerBlink {
+            0%, 100% { color: #ff6b6b; }
+            50% { color: #ff3838; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-play">
+            <div class="header">
+                <div class="player-emoji">{{player_emoji}}</div>
+                <div class="stats">
+                    <div class="score">Score: <span id="score">0</span></div>
+                    <div class="timer">Time: <span id="timer">30</span>s</div>
+                </div>
+                <div class="question-counter">
+                    Question <span id="current-question">1</span>/5
+                </div>
+            </div>
+
+            <div class="sentence-area">
+                <p class="sentence" id="sentence"></p>
+            </div>
+
+            <div class="choices" id="choices"></div>
+
+            <div class="feedback hidden" id="feedback"></div>
+        </div>
+
+        <div class="game-over" id="game-over">
+            <h2>Game Over!</h2>
+            <div class="final-score" id="final-score">0/5</div>
+            <div class="game-message" id="game-message"></div>
+            <button class="restart-btn" onclick="location.reload()">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        // Game data
+        const questions = {{questions}};
+        const winMessage = "{{win_message}}";
+        const loseMessage = "{{lose_message}}";
+
+        // Game state
+        let currentQuestion = 0;
+        let score = 0;
+        let timeLeft = 30;
+        let timerInterval = null;
+        let answersLocked = false;
+
+        // DOM elements
+        const scoreEl = document.getElementById('score');
+        const timerEl = document.getElementById('timer');
+        const currentQuestionEl = document.getElementById('current-question');
+        const sentenceEl = document.getElementById('sentence');
+        const choicesEl = document.getElementById('choices');
+        const feedbackEl = document.getElementById('feedback');
+        const gamePlayEl = document.querySelector('.game-play');
+        const gameOverEl = document.getElementById('game-over');
+        const finalScoreEl = document.getElementById('final-score');
+        const gameMessageEl = document.getElementById('game-message');
+
+        // Initialize game
+        function init() {
+            loadQuestion();
+            startTimer();
+        }
+
+        // Start countdown timer
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerEl.textContent = timeLeft;
+
+                if (timeLeft <= 10) {
+                    timerEl.parentElement.classList.add('warning');
+                }
+
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        // Load current question
+        function loadQuestion() {
+            if (currentQuestion >= questions.length) {
+                endGame();
+                return;
+            }
+
+            answersLocked = false;
+            const q = questions[currentQuestion];
+
+            // Update question counter
+            currentQuestionEl.textContent = currentQuestion + 1;
+
+            // Display sentence with blank
+            const sentenceWithBlank = q.sentence.replace('___', '<span class="blank">___</span>');
+            sentenceEl.innerHTML = sentenceWithBlank;
+
+            // Clear and create choice buttons
+            choicesEl.innerHTML = '';
+            feedbackEl.className = 'feedback hidden';
+            feedbackEl.textContent = '';
+
+            q.choices.forEach((emoji, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'choice-btn';
+                btn.textContent = emoji;
+                btn.onclick = () => selectChoice(index);
+                choicesEl.appendChild(btn);
+            });
+        }
+
+        // Handle choice selection
+        function selectChoice(index) {
+            if (answersLocked) return;
+
+            answersLocked = true;
+            const q = questions[currentQuestion];
+            const buttons = choicesEl.querySelectorAll('.choice-btn');
+            const isCorrect = index === q.correct_index;
+
+            // Disable all buttons
+            buttons.forEach(btn => btn.disabled = true);
+
+            if (isCorrect) {
+                score++;
+                scoreEl.textContent = score;
+                buttons[index].classList.add('correct');
+
+                feedbackEl.className = 'feedback correct';
+                feedbackEl.innerHTML = `<strong>✨ Correct!</strong><br>${q.explanation}`;
+
+                setTimeout(() => {
+                    currentQuestion++;
+                    loadQuestion();
+                }, 1500);
+            } else {
+                buttons[index].classList.add('wrong');
+                buttons[q.correct_index].classList.add('correct');
+
+                feedbackEl.className = 'feedback wrong';
+                feedbackEl.innerHTML = `<strong>❌ Oops!</strong><br>The answer was ${q.choices[q.correct_index]}<br>${q.explanation}`;
+
+                setTimeout(() => {
+                    currentQuestion++;
+                    loadQuestion();
+                }, 2500);
+            }
+        }
+
+        // End game
+        function endGame() {
+            clearInterval(timerInterval);
+            gamePlayEl.classList.add('hidden');
+            gameOverEl.classList.add('show');
+
+            finalScoreEl.textContent = `${score}/5`;
+
+            // Determine message based on score
+            let message;
+            if (score >= 4) {
+                message = winMessage;
+            } else if (score >= 2) {
+                message = "Not bad! You're getting the hang of it!";
+            } else {
+                message = loseMessage;
+            }
+
+            gameMessageEl.textContent = message;
+        }
+
+        // Start game when page loads
+        window.onload = init;
+    </script>
+</body>
+</html>

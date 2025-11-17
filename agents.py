@@ -9,6 +9,7 @@ from openai import AsyncOpenAI
 from anthropic import Anthropic
 import asyncio
 import json
+import random
 
 # Load environment variables
 load_dotenv('.env.local')
@@ -276,27 +277,50 @@ class ComposerAgent:
     def __init__(self):
         self.name = "Composer Agent"
 
-    def compose(self, mode, sub_agent_outputs):
+    def compose(self, mode, sub_agent_outputs, game_type="random"):
         """Compose final GameDef from all sub-agent outputs"""
+        # Determine game type
+        all_game_types = [
+            "tap_to_avoid", "side_scroller", "which_doesnt_belong",
+            "true_or_false", "memory_match", "emoji_ancestry",
+            "sort_sequence", "emoji_rebus"
+        ]
+
+        if game_type == "random":
+            selected_game_type = random.choice(all_game_types)
+        else:
+            selected_game_type = game_type
+
+        print(f"[Composer] Selected game type: {selected_game_type}")
+
         prompt = f"""You are the Composer Agent. Synthesize the following sub-agent outputs into a flat JSON structure for a playable game.
 
 Game Mode: {mode}
+Game Type: {selected_game_type}
 
 Sub-Agent Outputs:
 {json.dumps(sub_agent_outputs, indent=2)}
 
 IMPORTANT CONSTRAINTS:
 - Keep it SIMPLE and FEASIBLE - this is a micro-game (5-30 seconds)
-- GAME TYPE MUST BE "tap_to_avoid" (tap to move horizontally, avoid falling obstacles)
-- Adapt the theme to fit this mechanic, regardless of what the sub-agents suggested
+- Adapt the theme to fit the game type, regardless of what the sub-agents suggested
 - NO mini-games within games
 - NO complex multi-stage interactions
 - Speed of development is the priority
 - Think mobile-friendly, single-screen, instant-play
 
+GAME TYPE DESCRIPTIONS:
+1. tap_to_avoid: Tap to move horizontally, avoid falling obstacles
+2. side_scroller: Auto-run right, tap to jump over ground obstacles
+3. which_doesnt_belong: Find the odd one out (5 rounds, 4 options each)
+4. true_or_false: Answer true/false questions (6 questions)
+5. memory_match: Match pairs of emoji (6 unique emoji = 12 cards)
+6. emoji_ancestry: Combine emoji to discover the Ancient Ancestor (8-12 breeding pairs, 2-3 minutes gameplay)
+7. sort_sequence: Sort items in correct order (3 puzzles)
+8. emoji_rebus: Decode emoji puzzles (3 puzzles)
+
 EMOJI EXTRACTION:
-- Extract emoji characters from sub-agent outputs (character for player, obstacle for obstacles)
-- Look for emoji in the visual descriptions or create appropriate ones based on the theme
+- Extract emoji characters from sub-agent outputs or create appropriate ones based on the theme
 - Use actual emoji characters (e.g., "☁️", "💨", "🍌"), not text descriptions
 
 BACKGROUND COLOR:
@@ -308,9 +332,11 @@ WIN/LOSE MESSAGES:
 - Should reflect the game's vibe (funny, relaxing, scary, etc.)
 - Keep them brief (3-8 words each)
 
-Return as valid JSON with this EXACT flat structure:
+JSON STRUCTURE BY GAME TYPE:
+
+For "tap_to_avoid" or "side_scroller":
 {{
-  "game_type": "tap_to_avoid",
+  "game_type": "{selected_game_type}",
   "title": "Game Title",
   "player_emoji": "☁️",
   "obstacle_emoji": "💨",
@@ -319,16 +345,136 @@ Return as valid JSON with this EXACT flat structure:
   "lose_message": "Too much wind!"
 }}
 
+For "which_doesnt_belong":
+{{
+  "game_type": "which_doesnt_belong",
+  "title": "Game Title",
+  "background_color": "#FFB366",
+  "rounds": [
+    {{"options": ["🍎", "🍊", "🍌", "🚗"], "correct_index": 3, "explanation": "One is not a fruit"}},
+    {{"options": ["😀", "😂", "😢", "🏠"], "correct_index": 3, "explanation": "One is not an emoji face"}},
+    {{"options": ["🐶", "🐱", "🐭", "🌳"], "correct_index": 3, "explanation": "One is not an animal"}},
+    {{"options": ["⚽", "🏀", "🎾", "🍕"], "correct_index": 3, "explanation": "One is not a ball"}},
+    {{"options": ["🌞", "🌙", "⭐", "🍔"], "correct_index": 3, "explanation": "One is not in the sky"}}
+  ],
+  "win_message": "You found them all!",
+  "lose_message": "Try again!"
+}}
+
+For "true_or_false":
+{{
+  "game_type": "true_or_false",
+  "title": "Game Title",
+  "background_color": "#FFB366",
+  "player_emoji": "🤔",
+  "questions": [
+    {{"statement": "The sky is blue", "answer": true}},
+    {{"statement": "Fish can fly", "answer": false}},
+    {{"statement": "Water is wet", "answer": true}},
+    {{"statement": "Dogs meow", "answer": false}},
+    {{"statement": "Ice is cold", "answer": true}},
+    {{"statement": "Fire is cold", "answer": false}}
+  ],
+  "win_message": "Truth master!",
+  "lose_message": "False start!"
+}}
+
+For "memory_match":
+{{
+  "game_type": "memory_match",
+  "title": "Game Title",
+  "background_color": "#FFB366",
+  "emoji_pairs": ["🍎", "🍊", "🍌", "🍇", "🍓", "🍒"],
+  "win_message": "Perfect match!",
+  "lose_message": "Memory lapse!"
+}}
+
+For "emoji_ancestry":
+{{
+  "game_type": "emoji_ancestry",
+  "title": "Game Title",
+  "background_color": "#FFB366",
+  "seed_emoji": [
+    {{"emoji": "🥒", "name": "Pickle"}},
+    {{"emoji": "💃", "name": "Dancer"}},
+    {{"emoji": "😰", "name": "Nervous"}},
+    {{"emoji": "🎅", "name": "Santa"}},
+    {{"emoji": "🐰", "name": "Bunny"}}
+  ],
+  "breeding_pairs": [
+    {{"parent1": "🥒", "parent2": "💃", "child": "🕺", "name": "Dancing Pickle", "description": "A pickle with moves!"}},
+    {{"parent1": "😰", "parent2": "🎅", "child": "🎄", "name": "Nervous Christmas", "description": "Holiday anxiety"}},
+    {{"parent1": "🎄", "parent2": "🐰", "child": "🎁", "name": "Easter Gift", "description": "Wrong holiday!"}},
+    {{"parent1": "🕺", "parent2": "🎁", "child": "🌟", "name": "Party Star", "description": "The ancient ancestor!"}},
+    {{"parent1": "🥒", "parent2": "🐰", "child": "🥕", "name": "Bunny Snack", "description": "Rabbits love veggies"}},
+    {{"parent1": "💃", "parent2": "🎅", "child": "🔔", "name": "Jingle Dancer", "description": "Santa's got rhythm"}},
+    {{"parent1": "😰", "parent2": "🐰", "child": "🐇", "name": "Anxious Rabbit", "description": "Always hopping away"}},
+    {{"parent1": "🥕", "parent2": "🔔", "child": "🎺", "name": "Veggie Horn", "description": "Musical produce"}},
+    {{"parent1": "🐇", "parent2": "🎄", "child": "🎀", "name": "Holiday Bow", "description": "Wrapped up nicely"}},
+    {{"parent1": "🎀", "parent2": "🎺", "child": "🌟", "name": "Celebration Star", "description": "The ancient ancestor!"}}
+  ],
+  "ancestor_emoji": "🌟",
+  "ancestor_name": "The Celebration Star - origin of all joy!",
+  "hints": [
+    "Try combining your starting emoji first",
+    "The ancestor connects all your keywords",
+    "Mix different discoveries together",
+    "Some paths lead to the same ancestor"
+  ],
+  "win_message": "You found the Ancient Ancestor!",
+  "lose_message": "Keep exploring!"
+}}
+
+IMPORTANT FOR EMOJI_ANCESTRY:
+- Create 8-12 breeding_pairs that form a discovery tree
+- The ancestor_emoji should appear as the "child" in at least 2 different breeding pairs (multiple paths to victory)
+- seed_emoji should be 4-6 emoji derived from the Mad Lib keywords (Subject, Action, Vibe, Setting, Twist)
+- Each breeding pair should feel logical or humorously absurd based on the theme
+- breeding_pairs should allow players to discover 8-12 new emoji before finding the ancestor
+- Make sure multiple combination paths lead to the ancestor emoji for replayability
+
+For "sort_sequence":
+{{
+  "game_type": "sort_sequence",
+  "title": "Game Title",
+  "background_color": "#FFB366",
+  "puzzles": [
+    {{"items": ["🥚", "🐣", "🐥", "🐔"], "correct_order": [0, 1, 2, 3], "prompt": "Life cycle of a chicken", "explanation": "Egg, hatching, chick, then chicken"}},
+    {{"items": ["🌱", "🌿", "🌳", "🍎"], "correct_order": [0, 1, 2, 3], "prompt": "Growth of an apple tree", "explanation": "Seedling, sprout, tree, then fruit"}},
+    {{"items": ["☁️", "🌧️", "💧", "🌊"], "correct_order": [0, 1, 2, 3], "prompt": "Water cycle", "explanation": "Cloud, rain, droplet, then ocean"}}
+  ],
+  "win_message": "Perfect order!",
+  "lose_message": "Out of sequence!"
+}}
+
+For "emoji_rebus":
+{{
+  "game_type": "emoji_rebus",
+  "title": "Game Title",
+  "background_color": "#FFB366",
+  "puzzles": [
+    {{"emoji_sequence": ["🐝", "🍃"], "accepted_answers": ["believe", "bee leaf"], "hint": "Insect + leaf"}},
+    {{"emoji_sequence": ["👁️", "❤️", "🐑"], "accepted_answers": ["i love you", "eye love ewe"], "hint": "Eye + heart + ewe"}},
+    {{"emoji_sequence": ["☀️", "🌻"], "accepted_answers": ["sunflower", "sun flower"], "hint": "Sun + flower"}}
+  ],
+  "win_message": "Puzzle master!",
+  "lose_message": "Rebus confuses!"
+}}
+
 IMPORTANT:
-- game_type should match the mode and mechanic (e.g., "tap_to_avoid", "swipe_to_collect", "hold_to_charge")
+- game_type must be "{selected_game_type}" for this game
 - All emoji must be actual Unicode emoji characters
 - background_color must be a valid hex color
-- Ensure all elements are coherent and work together!"""
+- Generate thematic content that matches the game mode and sub-agent outputs
+- For intellectual games, create content that fits the theme (e.g., space theme = space questions)
+- Ensure all elements are coherent and work together!
+
+Return ONLY valid JSON matching the structure above for game type "{selected_game_type}"."""
 
         try:
             message = anthropic_client.messages.create(
                 model=COMPOSER_MODEL,  # Use higher quality model
-                max_tokens=1000,
+                max_tokens=2000,  # Increased for intellectual games with more content
                 temperature=0.3,  # Lower temp for structured output
                 messages=[
                     {"role": "user", "content": prompt}
