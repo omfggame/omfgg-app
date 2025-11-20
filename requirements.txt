@@ -1,3 +1,4 @@
+# Python 3.13 required
 gradio>=5.0.0
 openai>=1.0.0
 anthropic>=0.39.0

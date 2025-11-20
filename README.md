@@ -26,7 +26,7 @@ A Mad-Lib style game generator that creates playable micro-games in seconds usin
 # 1. Clone and setup
 git clone https://github.com/omfggame/omfgg-app.git
 cd omfgg-app
-python3 -m venv venv
+python3.13 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 
@@ -58,7 +58,7 @@ python app_with_agents.py
 ## Tech Stack
 
 - **Frontend:** Gradio 5.49+ (mobile-friendly)
-- **Backend:** Python 3.10+
+- **Backend:** Python 3.13
 - **AI:** OpenAI GPT-4o-mini, Anthropic Claude Sonnet 4.5
 - **Deployment:** HuggingFace Spaces
 
