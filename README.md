@@ -5,7 +5,7 @@ colorFrom: blue
 colorTo: purple
 sdk: gradio
 sdk_version: 5.49.0
-app_file: app_with_agents.py
+app_file: narrative_app.py
 pinned: false
 tags:
   - mcp-in-action
