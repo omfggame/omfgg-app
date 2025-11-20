@@ -768,6 +768,6 @@ with gr.Blocks(theme=gr.themes.Soft(), title="OMFGG Narrative Adventures") as de
 
 
 if __name__ == "__main__":
-    demo.launch(share=False, server_name="0.0.0.0", server_port=7861)
+    demo.launch(share=False, server_name="0.0.0.0", server_port=7860)
 
 
