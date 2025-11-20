@@ -60,7 +60,7 @@ class NarrativeComposer:
 
         message = self.client.messages.create(
             model=self.model,
-            max_tokens=5000,
+            max_tokens=16000,
             temperature=0.35,
             messages=[{"role": "user", "content": prompt}],
         )
@@ -103,7 +103,7 @@ class NarrativeComposer:
             {json.dumps(normalized_inputs, indent=2)}
 
             Produce a narrative structure with these rules:
-            - Create 5-8 total scenes (`Scene` objects).
+            - Create 4-6 total scenes (`Scene` objects) to keep generation fast and reliable.
             - Each non-terminal scene needs 2-4 choices.
             - Choices must include: `id`, `label`, `result_text`, `next_scene_id` (use `null` to end the game),
               `delta_score` (int), `risk_level` ("safe" | "risky" | "chaotic"), optional `loot` and `stat_changes`.
