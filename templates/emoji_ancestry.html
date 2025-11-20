@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emoji Ancestry Tree</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: {{background_color}};
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        .game-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+            max-width: 420px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+
+        .goal {
+            font-size: 13px;
+            color: #7f8c8d;
+            margin-bottom: 8px;
+        }
+
+        .progress {
+            font-size: 12px;
+            color: #27ae60;
+            font-weight: 600;
+        }
+
+        /* Emoji Inventory */
+        .emoji-inventory {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .inventory-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #7f8c8d;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .emoji-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .emoji-item {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 8px 12px;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 60px;
+        }
+
+        .emoji-item.selected {
+            border-color: #3498db;
+            background: #e3f2fd;
+            transform: scale(1.05);
+        }
+
+        .emoji-item.used {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .emoji-item .emoji {
+            font-size: 28px;
+        }
+
+        .emoji-item .label {
+            font-size: 9px;
+            color: #95a5a6;
+            margin-top: 2px;
+            text-align: center;
+        }
+
+        /* Combination Area */
+        .combination-area {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .combine-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #7f8c8d;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            text-align: center;
+        }
+
+        .combine-slots {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+
+        .combine-slot {
+            width: 70px;
+            height: 70px;
+            border: 3px dashed #bdc3c7;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            background: white;
+        }
+
+        .combine-slot.filled {
+            border-color: #3498db;
+            border-style: solid;
+            background: #e3f2fd;
+        }
+
+        .plus-sign {
+            font-size: 24px;
+            color: #95a5a6;
+            font-weight: 700;
+        }
+
+        .combine-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .combine-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .combine-btn:not(:disabled):active {
+            transform: scale(0.98);
+        }
+
+        /* Result Area */
+        .result-area {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .result-emoji {
+            font-size: 48px;
+            margin-bottom: 8px;
+            animation: popIn 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        .result-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 4px;
+        }
+
+        .result-description {
+            font-size: 12px;
+            color: #7f8c8d;
+            text-align: center;
+        }
+
+        @keyframes popIn {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* Family Tree */
+        .family-tree {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 12px;
+            flex-grow: 1;
+            overflow-y: auto;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .tree-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #7f8c8d;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+        }
+
+        .tree-entry {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 6px;
+            font-size: 12px;
+        }
+
+        .tree-entry .emoji {
+            font-size: 20px;
+            margin: 0 4px;
+        }
+
+        .tree-entry .arrow {
+            color: #95a5a6;
+            margin: 0 4px;
+        }
+
+        .tree-entry .name {
+            color: #2c3e50;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        /* Hint System */
+        .hint-area {
+            background: rgba(52, 152, 219, 0.1);
+            border-left: 3px solid #3498db;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-top: 8px;
+        }
+
+        .hint-text {
+            font-size: 11px;
+            color: #2980b9;
+            font-style: italic;
+        }
+
+        /* Win/Lose Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 32px;
+            border-radius: 16px;
+            text-align: center;
+            max-width: 300px;
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-emoji {
+            font-size: 72px;
+            margin-bottom: 16px;
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+
+        .modal-message {
+            font-size: 16px;
+            color: #7f8c8d;
+            margin-bottom: 8px;
+        }
+
+        .modal-stats {
+            font-size: 12px;
+            color: #95a5a6;
+            margin-bottom: 24px;
+        }
+
+        .restart-btn {
+            padding: 12px 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <div class="title">🧬 Emoji Ancestry Tree</div>
+            <div class="goal">Combine emoji to discover the Ancient Ancestor!</div>
+            <div class="progress">Discoveries: <span id="discoveryCount">0</span></div>
+        </div>
+
+        <div class="emoji-inventory">
+            <div class="inventory-title">Your Emoji Collection</div>
+            <div class="emoji-list" id="emojiList"></div>
+        </div>
+
+        <div class="combination-area">
+            <div class="combine-title">Combine Two Emoji</div>
+            <div class="combine-slots">
+                <div class="combine-slot" id="slot1"></div>
+                <div class="plus-sign">+</div>
+                <div class="combine-slot" id="slot2"></div>
+            </div>
+            <button class="combine-btn" id="combineBtn" disabled>Combine</button>
+        </div>
+
+        <div class="result-area" id="resultArea" style="display: none;">
+            <div class="result-emoji" id="resultEmoji"></div>
+            <div class="result-name" id="resultName"></div>
+            <div class="result-description" id="resultDescription"></div>
+        </div>
+
+        <div class="family-tree">
+            <div class="tree-title">Discovery History (<span id="historyCount">0</span>)</div>
+            <div id="treeHistory"></div>
+            <div class="hint-area">
+                <div class="hint-text" id="hintText">💡 Select two emoji to combine them</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="winModal">
+        <div class="modal-content">
+            <div class="modal-emoji" id="ancestorEmoji"></div>
+            <div class="modal-title">Ancient Ancestor Found!</div>
+            <div class="modal-message" id="winMessage">{{win_message}}</div>
+            <div class="modal-stats" id="winStats"></div>
+            <button class="restart-btn" onclick="location.reload()">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        // Game data from template
+        const GAME_DATA = {{game_data}};
+
+        // Game state
+        let availableEmoji = new Map(); // emoji -> {emoji, name, isNew}
+        let selectedEmoji = [];
+        let discoveredPairs = new Set();
+        let discoveryCount = 0;
+        let currentHintIndex = 0;
+
+        // Initialize game
+        function init() {
+            // Add seed emoji to collection
+            GAME_DATA.seed_emoji.forEach(item => {
+                availableEmoji.set(item.emoji, {
+                    emoji: item.emoji,
+                    name: item.name,
+                    isNew: false
+                });
+            });
+
+            renderEmojiList();
+            updateHint();
+        }
+
+        // Render emoji inventory
+        function renderEmojiList() {
+            const list = document.getElementById('emojiList');
+            list.innerHTML = '';
+
+            availableEmoji.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'emoji-item';
+                if (item.isNew) {
+                    div.style.animation = 'popIn 0.3s ease-out';
+                }
+                div.innerHTML = `
+                    <div class="emoji">${item.emoji}</div>
+                    <div class="label">${item.name}</div>
+                `;
+                div.onclick = () => selectEmoji(item.emoji);
+                list.appendChild(div);
+            });
+        }
+
+        // Select emoji for combination
+        function selectEmoji(emoji) {
+            const item = availableEmoji.get(emoji);
+
+            // If already selected, deselect
+            const index = selectedEmoji.indexOf(emoji);
+            if (index !== -1) {
+                selectedEmoji.splice(index, 1);
+            } else {
+                // Add to selection (max 2)
+                if (selectedEmoji.length < 2) {
+                    selectedEmoji.push(emoji);
+                } else {
+                    // Replace oldest selection
+                    selectedEmoji.shift();
+                    selectedEmoji.push(emoji);
+                }
+            }
+
+            updateCombineSlots();
+            updateEmojiSelection();
+        }
+
+        // Update visual selection state
+        function updateEmojiSelection() {
+            const items = document.querySelectorAll('.emoji-item');
+            items.forEach(item => {
+                const emoji = item.querySelector('.emoji').textContent;
+                if (selectedEmoji.includes(emoji)) {
+                    item.classList.add('selected');
+                } else {
+                    item.classList.remove('selected');
+                }
+            });
+        }
+
+        // Update combination slots
+        function updateCombineSlots() {
+            const slot1 = document.getElementById('slot1');
+            const slot2 = document.getElementById('slot2');
+            const btn = document.getElementById('combineBtn');
+
+            slot1.textContent = selectedEmoji[0] || '';
+            slot2.textContent = selectedEmoji[1] || '';
+
+            slot1.className = selectedEmoji[0] ? 'combine-slot filled' : 'combine-slot';
+            slot2.className = selectedEmoji[1] ? 'combine-slot filled' : 'combine-slot';
+
+            btn.disabled = selectedEmoji.length !== 2;
+        }
+
+        // Combine emoji
+        document.getElementById('combineBtn').onclick = function() {
+            if (selectedEmoji.length !== 2) return;
+
+            const [emoji1, emoji2] = selectedEmoji;
+            const pairKey = [emoji1, emoji2].sort().join('|');
+
+            // Find breeding result
+            let result = null;
+            for (const pair of GAME_DATA.breeding_pairs) {
+                const parents = [pair.parent1, pair.parent2].sort().join('|');
+                if (parents === pairKey) {
+                    result = pair;
+                    break;
+                }
+            }
+
+            if (!result) {
+                // No match - show default result
+                showResult('❓', 'No Match', 'These emoji cannot combine. Try different pairs!');
+                updateHint();
+                return;
+            }
+
+            // Check if already discovered
+            const isNewDiscovery = !availableEmoji.has(result.child);
+
+            if (isNewDiscovery) {
+                discoveryCount++;
+                document.getElementById('discoveryCount').textContent = discoveryCount;
+
+                // Add to collection
+                availableEmoji.set(result.child, {
+                    emoji: result.child,
+                    name: result.name,
+                    isNew: true
+                });
+
+                // Add to history
+                addToHistory(emoji1, emoji2, result.child, result.name);
+
+                // Show result
+                showResult(result.child, result.name, result.description || 'A new discovery!');
+
+                // Check if found ancestor
+                if (result.child === GAME_DATA.ancestor_emoji) {
+                    setTimeout(() => showWin(), 1500);
+                } else {
+                    // Render updated list
+                    setTimeout(() => renderEmojiList(), 300);
+                    updateHint();
+                }
+            } else {
+                showResult(result.child, result.name, 'Already discovered!');
+            }
+
+            // Clear selection
+            selectedEmoji = [];
+            updateCombineSlots();
+            updateEmojiSelection();
+        };
+
+        // Show combination result
+        function showResult(emoji, name, description) {
+            const area = document.getElementById('resultArea');
+            document.getElementById('resultEmoji').textContent = emoji;
+            document.getElementById('resultName').textContent = name;
+            document.getElementById('resultDescription').textContent = description;
+
+            area.style.display = 'flex';
+
+            setTimeout(() => {
+                area.style.display = 'none';
+            }, 2000);
+        }
+
+        // Add to discovery history
+        function addToHistory(parent1, parent2, child, name) {
+            const history = document.getElementById('treeHistory');
+            const entry = document.createElement('div');
+            entry.className = 'tree-entry';
+            entry.style.animation = 'popIn 0.3s ease-out';
+            entry.innerHTML = `
+                <span class="emoji">${parent1}</span>
+                <span class="arrow">+</span>
+                <span class="emoji">${parent2}</span>
+                <span class="arrow">→</span>
+                <span class="emoji">${child}</span>
+                <span class="name">${name}</span>
+            `;
+            history.insertBefore(entry, history.firstChild);
+
+            document.getElementById('historyCount').textContent = discoveryCount;
+        }
+
+        // Update hint
+        function updateHint() {
+            if (GAME_DATA.hints && GAME_DATA.hints.length > 0) {
+                const hint = GAME_DATA.hints[currentHintIndex % GAME_DATA.hints.length];
+                document.getElementById('hintText').textContent = '💡 ' + hint;
+                currentHintIndex++;
+            }
+        }
+
+        // Show win modal
+        function showWin() {
+            document.getElementById('ancestorEmoji').textContent = GAME_DATA.ancestor_emoji;
+            document.getElementById('winMessage').textContent = GAME_DATA.ancestor_name;
+            document.getElementById('winStats').textContent =
+                `You made ${discoveryCount} discoveries!`;
+            document.getElementById('winModal').classList.add('show');
+        }
+
+        // Start game
+        init();
+    </script>
+</body>
+</html>

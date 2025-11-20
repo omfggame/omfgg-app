@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>True or False?</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: {{background_color}};
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .game-container {
+            max-width: 400px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .character-avatar {
+            font-size: 100px;
+            text-align: center;
+            margin-bottom: 20px;
+            animation: bounce 0.5s ease-in-out;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .timer {
+            background: #ff6b6b;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .score {
+            background: #4CAF50;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .question-counter {
+            background: #2196F3;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            text-align: center;
+        }
+
+        .statement-bubble {
+            background: #f5f5f5;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            position: relative;
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .statement-bubble::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-bottom: 15px solid #f5f5f5;
+        }
+
+        .statement-text {
+            font-size: 18px;
+            line-height: 1.5;
+            color: #333;
+            text-align: center;
+        }
+
+        .button-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .answer-btn {
+            flex: 1;
+            padding: 20px;
+            font-size: 20px;
+            font-weight: 700;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .answer-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .answer-btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .answer-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-true {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-false {
+            background: #f44336;
+            color: white;
+        }
+
+        .feedback {
+            text-align: center;
+            font-size: 24px;
+            font-weight: 700;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .feedback.show {
+            opacity: 1;
+        }
+
+        .feedback.correct {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .feedback.wrong {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .fun-fact {
+            background: #fff3cd;
+            color: #856404;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 15px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .fun-fact.show {
+            opacity: 1;
+        }
+
+        .game-over {
+            text-align: center;
+            display: none;
+        }
+
+        .game-over.show {
+            display: block;
+        }
+
+        .final-score {
+            font-size: 48px;
+            font-weight: 700;
+            color: #2196F3;
+            margin: 20px 0;
+        }
+
+        .result-message {
+            font-size: 24px;
+            font-weight: 600;
+            color: #333;
+            margin: 20px 0;
+        }
+
+        .restart-btn {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 18px;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .restart-btn:hover {
+            background: #1976D2;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .game-content {
+            display: block;
+        }
+
+        .game-content.hide {
+            display: none;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .shake {
+            animation: shake 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="character-avatar">{{player_emoji}}</div>
+
+        <div class="game-content" id="gameContent">
+            <div class="game-header">
+                <div class="question-counter" id="questionCounter">1/6</div>
+                <div class="score" id="score">Score: 0</div>
+                <div class="timer" id="timer">30s</div>
+            </div>
+
+            <div class="statement-bubble">
+                <div class="statement-text" id="statementText"></div>
+            </div>
+
+            <div class="feedback" id="feedback"></div>
+            <div class="fun-fact" id="funFact"></div>
+
+            <div class="button-container">
+                <button class="answer-btn btn-true" id="trueBtn">True</button>
+                <button class="answer-btn btn-false" id="falseBtn">False</button>
+            </div>
+        </div>
+
+        <div class="game-over" id="gameOver">
+            <div class="final-score" id="finalScore"></div>
+            <div class="result-message" id="resultMessage"></div>
+            <button class="restart-btn" onclick="location.reload()">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        // Game configuration
+        const TOTAL_QUESTIONS = 6;
+        const GAME_DURATION = 30; // seconds
+        const FEEDBACK_DELAY = 1500; // milliseconds
+
+        // Template variables
+        const questions = {{questions}};
+        const winMessage = "{{win_message}}";
+        const loseMessage = "{{lose_message}}";
+
+        // Game state
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let timeRemaining = GAME_DURATION;
+        let timerInterval = null;
+        let gameActive = true;
+
+        // DOM elements
+        const statementText = document.getElementById('statementText');
+        const feedback = document.getElementById('feedback');
+        const funFact = document.getElementById('funFact');
+        const trueBtn = document.getElementById('trueBtn');
+        const falseBtn = document.getElementById('falseBtn');
+        const scoreDisplay = document.getElementById('score');
+        const timerDisplay = document.getElementById('timer');
+        const questionCounter = document.getElementById('questionCounter');
+        const gameContent = document.getElementById('gameContent');
+        const gameOver = document.getElementById('gameOver');
+        const finalScore = document.getElementById('finalScore');
+        const resultMessage = document.getElementById('resultMessage');
+
+        // Initialize game
+        function init() {
+            loadQuestion();
+            startTimer();
+
+            trueBtn.addEventListener('click', () => handleAnswer(true));
+            falseBtn.addEventListener('click', () => handleAnswer(false));
+        }
+
+        // Load current question
+        function loadQuestion() {
+            if (currentQuestionIndex >= questions.length) {
+                endGame();
+                return;
+            }
+
+            const question = questions[currentQuestionIndex];
+            statementText.textContent = question.statement;
+            questionCounter.textContent = `${currentQuestionIndex + 1}/${TOTAL_QUESTIONS}`;
+
+            // Reset feedback
+            feedback.classList.remove('show', 'correct', 'wrong');
+            funFact.classList.remove('show');
+            feedback.textContent = '';
+            funFact.textContent = '';
+        }
+
+        // Handle answer selection
+        function handleAnswer(userAnswer) {
+            if (!gameActive) return;
+
+            const question = questions[currentQuestionIndex];
+            const isCorrect = userAnswer === question.answer;
+
+            // Disable buttons
+            trueBtn.disabled = true;
+            falseBtn.disabled = true;
+
+            // Update score
+            if (isCorrect) {
+                score += 1;
+                feedback.textContent = 'Correct!';
+                feedback.classList.add('correct');
+            } else {
+                score -= 1;
+                feedback.textContent = 'Wrong!';
+                feedback.classList.add('wrong');
+                document.querySelector('.statement-bubble').classList.add('shake');
+                setTimeout(() => {
+                    document.querySelector('.statement-bubble').classList.remove('shake');
+                }, 300);
+            }
+
+            // Show feedback and fun fact
+            feedback.classList.add('show');
+            if (question.fun_fact) {
+                funFact.textContent = question.fun_fact;
+                funFact.classList.add('show');
+            }
+
+            scoreDisplay.textContent = `Score: ${score}`;
+
+            // Auto-advance to next question
+            setTimeout(() => {
+                currentQuestionIndex++;
+                trueBtn.disabled = false;
+                falseBtn.disabled = false;
+                loadQuestion();
+            }, FEEDBACK_DELAY);
+        }
+
+        // Timer
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                timerDisplay.textContent = `${timeRemaining}s`;
+
+                // Warning color when time is low
+                if (timeRemaining <= 10) {
+                    timerDisplay.style.background = '#ff4444';
+                }
+
+                if (timeRemaining <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        // End game
+        function endGame() {
+            gameActive = false;
+            clearInterval(timerInterval);
+
+            // Hide game content
+            gameContent.classList.add('hide');
+
+            // Show game over screen
+            finalScore.textContent = `Score: ${score}`;
+
+            if (score >= 0) {
+                resultMessage.textContent = winMessage;
+            } else {
+                resultMessage.textContent = loseMessage;
+            }
+
+            gameOver.classList.add('show');
+        }
+
+        // Start the game
+        init();
+    </script>
+</body>
+</html>

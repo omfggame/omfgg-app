@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Sort the Sequence</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: {{background_color}};
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        #game-container {
+            width: 100%;
+            max-width: 500px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        #header {
+            margin-bottom: 20px;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        #stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        #puzzle-info {
+            font-size: 14px;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        #prompt {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 30px;
+            padding: 15px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        #items-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .emoji-card {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            cursor: move;
+            user-select: none;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: transform 0.2s, box-shadow 0.2s;
+            touch-action: none;
+        }
+
+        .emoji-card:active {
+            cursor: grabbing;
+        }
+
+        .emoji-card.dragging {
+            opacity: 0.5;
+            transform: scale(1.1);
+        }
+
+        .emoji-card.mobile-selected {
+            transform: scale(1.1);
+            box-shadow: 0 0 0 3px #FFD700;
+        }
+
+        #drop-zones {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .drop-zone {
+            min-height: 100px;
+            background: rgba(255,255,255,0.3);
+            border: 3px dashed rgba(255,255,255,0.6);
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            padding: 10px;
+            transition: all 0.2s;
+        }
+
+        .drop-zone.drag-over {
+            background: rgba(255,255,255,0.5);
+            border-color: white;
+            transform: scale(1.05);
+        }
+
+        .drop-zone-label {
+            font-size: 14px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .drop-zone .emoji-card {
+            cursor: move;
+        }
+
+        #submit-btn {
+            padding: 15px 40px;
+            font-size: 20px;
+            font-weight: bold;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: all 0.2s;
+            margin-bottom: 20px;
+        }
+
+        #submit-btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+
+        #submit-btn:active {
+            transform: translateY(0);
+        }
+
+        #submit-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        #feedback {
+            min-height: 60px;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 15px;
+        }
+
+        #explanation {
+            font-size: 16px;
+            color: white;
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .correct {
+            color: #4CAF50;
+            animation: pulse 0.5s;
+        }
+
+        .incorrect {
+            color: #f44336;
+            animation: shake 0.5s;
+        }
+
+        .partial {
+            color: #FFA500;
+            animation: pulse 0.5s;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        #game-over {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        #game-over-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 400px;
+        }
+
+        #game-over-content h2 {
+            font-size: 32px;
+            margin-bottom: 20px;
+        }
+
+        #game-over-content p {
+            font-size: 20px;
+            color: #666;
+        }
+
+        @media (max-width: 480px) {
+            .emoji-card {
+                width: 70px;
+                height: 70px;
+                font-size: 40px;
+            }
+
+            #drop-zones {
+                gap: 10px;
+            }
+
+            #prompt {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="header">
+            <div id="stats">
+                <div id="score">Score: 0</div>
+                <div id="timer">Time: 30</div>
+            </div>
+            <div id="puzzle-info">Puzzle <span id="current-puzzle">1</span>/3</div>
+        </div>
+
+        <div id="prompt"></div>
+
+        <div id="items-container"></div>
+
+        <div id="drop-zones">
+            <div class="drop-zone" data-position="0">
+                <div class="drop-zone-label">1st</div>
+            </div>
+            <div class="drop-zone" data-position="1">
+                <div class="drop-zone-label">2nd</div>
+            </div>
+            <div class="drop-zone" data-position="2">
+                <div class="drop-zone-label">3rd</div>
+            </div>
+            <div class="drop-zone" data-position="3">
+                <div class="drop-zone-label">4th</div>
+            </div>
+        </div>
+
+        <button id="submit-btn" disabled>Submit Answer</button>
+
+        <div id="feedback"></div>
+        <div id="explanation"></div>
+    </div>
+
+    <div id="game-over">
+        <div id="game-over-content">
+            <h2 id="game-over-title"></h2>
+            <p id="final-score"></p>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        const PUZZLES = {{puzzles}};
+        const GAME_TIME = 30;
+        const WIN_MESSAGE = "{{win_message}}";
+        const LOSE_MESSAGE = "{{lose_message}}";
+
+        let currentPuzzleIndex = 0;
+        let score = 0;
+        let timeRemaining = GAME_TIME;
+        let timerInterval = null;
+        let draggedElement = null;
+        let touchSelectedCard = null;
+
+        // DOM elements
+        const promptEl = document.getElementById('prompt');
+        const itemsContainer = document.getElementById('items-container');
+        const dropZones = document.querySelectorAll('.drop-zone');
+        const submitBtn = document.getElementById('submit-btn');
+        const feedbackEl = document.getElementById('feedback');
+        const explanationEl = document.getElementById('explanation');
+        const scoreEl = document.getElementById('score');
+        const timerEl = document.getElementById('timer');
+        const currentPuzzleEl = document.getElementById('current-puzzle');
+        const gameOverEl = document.getElementById('game-over');
+        const gameOverTitleEl = document.getElementById('game-over-title');
+        const finalScoreEl = document.getElementById('final-score');
+
+        // Initialize game
+        function init() {
+            loadPuzzle(currentPuzzleIndex);
+            startTimer();
+        }
+
+        // Load puzzle
+        function loadPuzzle(index) {
+            if (index >= PUZZLES.length) {
+                endGame();
+                return;
+            }
+
+            const puzzle = PUZZLES[index];
+            promptEl.textContent = puzzle.prompt;
+            currentPuzzleEl.textContent = index + 1;
+
+            // Shuffle items
+            const shuffledItems = [...puzzle.items].sort(() => Math.random() - 0.5);
+
+            // Clear containers
+            itemsContainer.innerHTML = '';
+            dropZones.forEach(zone => {
+                const label = zone.querySelector('.drop-zone-label');
+                zone.innerHTML = '';
+                zone.appendChild(label);
+            });
+
+            // Create emoji cards
+            shuffledItems.forEach((emoji, idx) => {
+                const card = createEmojiCard(emoji, idx);
+                itemsContainer.appendChild(card);
+            });
+
+            submitBtn.disabled = true;
+            feedbackEl.textContent = '';
+            explanationEl.style.display = 'none';
+        }
+
+        // Create emoji card
+        function createEmojiCard(emoji, id) {
+            const card = document.createElement('div');
+            card.className = 'emoji-card';
+            card.textContent = emoji;
+            card.draggable = true;
+            card.dataset.emoji = emoji;
+            card.dataset.id = id;
+
+            // Desktop drag events
+            card.addEventListener('dragstart', handleDragStart);
+            card.addEventListener('dragend', handleDragEnd);
+
+            // Mobile touch events
+            card.addEventListener('touchstart', handleTouchStart, { passive: false });
+            card.addEventListener('click', handleCardClick);
+
+            return card;
+        }
+
+        // Desktop drag handlers
+        function handleDragStart(e) {
+            draggedElement = this;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragEnd(e) {
+            this.classList.remove('dragging');
+            draggedElement = null;
+        }
+
+        // Mobile touch handlers
+        function handleTouchStart(e) {
+            e.preventDefault();
+            handleCardClick.call(this);
+        }
+
+        function handleCardClick() {
+            // Mobile tap-to-swap functionality
+            if (touchSelectedCard === this) {
+                // Deselect
+                this.classList.remove('mobile-selected');
+                touchSelectedCard = null;
+            } else if (touchSelectedCard) {
+                // Swap cards
+                swapCards(touchSelectedCard, this);
+                touchSelectedCard.classList.remove('mobile-selected');
+                touchSelectedCard = null;
+            } else {
+                // Select card
+                document.querySelectorAll('.emoji-card').forEach(c => c.classList.remove('mobile-selected'));
+                this.classList.add('mobile-selected');
+                touchSelectedCard = this;
+            }
+        }
+
+        function swapCards(card1, card2) {
+            const parent1 = card1.parentElement;
+            const parent2 = card2.parentElement;
+
+            if (parent1 === parent2) return;
+
+            // Swap positions
+            const temp = document.createElement('div');
+            parent1.insertBefore(temp, card1);
+            parent2.insertBefore(card1, card2);
+            parent1.insertBefore(card2, temp);
+            parent1.removeChild(temp);
+
+            checkSubmitButton();
+        }
+
+        // Drop zone handlers
+        dropZones.forEach(zone => {
+            zone.addEventListener('dragover', handleDragOver);
+            zone.addEventListener('drop', handleDrop);
+            zone.addEventListener('dragleave', handleDragLeave);
+            zone.addEventListener('click', handleZoneClick);
+        });
+
+        function handleDragOver(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+            e.dataTransfer.dropEffect = 'move';
+            this.classList.add('drag-over');
+            return false;
+        }
+
+        function handleDrop(e) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            }
+            this.classList.remove('drag-over');
+
+            if (draggedElement) {
+                // Remove existing card from this zone if any
+                const existingCard = this.querySelector('.emoji-card');
+                if (existingCard && existingCard !== draggedElement) {
+                    itemsContainer.appendChild(existingCard);
+                }
+
+                // Add dragged card to zone
+                this.appendChild(draggedElement);
+                checkSubmitButton();
+            }
+
+            return false;
+        }
+
+        function handleDragLeave(e) {
+            this.classList.remove('drag-over');
+        }
+
+        function handleZoneClick() {
+            // Mobile tap-to-place functionality
+            if (touchSelectedCard) {
+                const existingCard = this.querySelector('.emoji-card');
+                if (existingCard) {
+                    itemsContainer.appendChild(existingCard);
+                }
+                this.appendChild(touchSelectedCard);
+                touchSelectedCard.classList.remove('mobile-selected');
+                touchSelectedCard = null;
+                checkSubmitButton();
+            }
+        }
+
+        // Check if all zones filled
+        function checkSubmitButton() {
+            const allFilled = Array.from(dropZones).every(zone =>
+                zone.querySelector('.emoji-card')
+            );
+            submitBtn.disabled = !allFilled;
+        }
+
+        // Submit answer
+        submitBtn.addEventListener('click', () => {
+            const puzzle = PUZZLES[currentPuzzleIndex];
+            const userOrder = [];
+
+            dropZones.forEach(zone => {
+                const card = zone.querySelector('.emoji-card');
+                if (card) {
+                    const emoji = card.dataset.emoji;
+                    const originalIndex = puzzle.items.indexOf(emoji);
+                    userOrder.push(originalIndex);
+                }
+            });
+
+            checkAnswer(userOrder, puzzle.correct_order, puzzle.explanation);
+        });
+
+        // Check answer
+        function checkAnswer(userOrder, correctOrder, explanation) {
+            const isCorrect = JSON.stringify(userOrder) === JSON.stringify(correctOrder);
+
+            if (isCorrect) {
+                score += 3;
+                feedbackEl.textContent = 'Perfect! +3 points';
+                feedbackEl.className = 'correct';
+            } else {
+                // Check for partial credit (some correct positions)
+                const correctPositions = userOrder.filter((val, idx) => val === correctOrder[idx]).length;
+                if (correctPositions > 0) {
+                    score += 1;
+                    feedbackEl.textContent = 'Close! +1 point';
+                    feedbackEl.className = 'partial';
+                } else {
+                    feedbackEl.textContent = 'Not quite!';
+                    feedbackEl.className = 'incorrect';
+                }
+
+                // Show correct answer
+                explanationEl.textContent = explanation;
+                explanationEl.style.display = 'block';
+            }
+
+            scoreEl.textContent = `Score: ${score}`;
+            submitBtn.disabled = true;
+
+            // Move to next puzzle after delay
+            setTimeout(() => {
+                currentPuzzleIndex++;
+                loadPuzzle(currentPuzzleIndex);
+            }, 2500);
+        }
+
+        // Timer
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                timerEl.textContent = `Time: ${timeRemaining}`;
+
+                if (timeRemaining <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        // End game
+        function endGame() {
+            clearInterval(timerInterval);
+
+            const didWin = score >= 5; // Win condition: 5+ points
+            gameOverTitleEl.textContent = didWin ? WIN_MESSAGE : LOSE_MESSAGE;
+            finalScoreEl.textContent = `Final Score: ${score}`;
+            gameOverEl.style.display = 'flex';
+        }
+
+        // Start game
+        init();
+    </script>
+</body>
+</html>
