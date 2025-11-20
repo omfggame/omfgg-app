@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tap to Avoid</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: {{background_color}};
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      touch-action: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    #gameContainer {
+      position: relative;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+    }
+
+    #game {
+      display: block;
+      background: #f0f0f0;
+    }
+
+    #ui {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      display: flex;
+      justify-content: space-between;
+      color: #333;
+      font-weight: bold;
+      font-size: 18px;
+      text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
+      pointer-events: none;
+    }
+
+    #gameOver {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: white;
+    }
+
+    #gameOver.show {
+      display: flex;
+    }
+
+    #message {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 20px;
+      text-align: center;
+      padding: 0 20px;
+    }
+
+    #finalScore {
+      font-size: 18px;
+      margin-bottom: 30px;
+    }
+
+    #restartBtn {
+      background: white;
+      color: #333;
+      border: none;
+      padding: 15px 40px;
+      font-size: 18px;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+
+    #restartBtn:hover {
+      transform: scale(1.05);
+    }
+
+    #restartBtn:active {
+      transform: scale(0.95);
+    }
+
+    #instructions {
+      margin-top: 20px;
+      color: #333;
+      text-align: center;
+      max-width: 400px;
+      padding: 0 20px;
+    }
+
+    @media (max-width: 480px) {
+      #gameContainer {
+        border-radius: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="gameContainer">
+    <canvas id="game" width="400" height="600"></canvas>
+
+    <div id="ui">
+      <div id="timer">Time: 30s</div>
+      <div id="score">Score: 0</div>
+    </div>
+
+    <div id="gameOver">
+      <div id="message"></div>
+      <div id="finalScore"></div>
+      <button id="restartBtn">Play Again</button>
+    </div>
+  </div>
+
+  <div id="instructions">
+    Tap anywhere to move your player and avoid the falling obstacles!
+  </div>
+
+  <script>
+    // Canvas setup
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const WIDTH = canvas.width;
+    const HEIGHT = canvas.height;
+
+    // UI elements
+    const timerEl = document.getElementById('timer');
+    const scoreEl = document.getElementById('score');
+    const gameOverEl = document.getElementById('gameOver');
+    const messageEl = document.getElementById('message');
+    const finalScoreEl = document.getElementById('finalScore');
+    const restartBtn = document.getElementById('restartBtn');
+
+    // Game configuration
+    const PLAYER_EMOJI = '{{player_emoji}}';
+    const OBSTACLE_EMOJI = '{{obstacle_emoji}}';
+    const WIN_MESSAGE = '{{win_message}}';
+    const LOSE_MESSAGE = '{{lose_message}}';
+    const GAME_DURATION = 30; // seconds
+    const EMOJI_SIZE = 40;
+
+    // Game state
+    let gameState = {
+      running: false,
+      startTime: 0,
+      timeLeft: GAME_DURATION,
+      score: 0,
+      player: {
+        x: WIDTH / 2,
+        y: HEIGHT - 100,
+        size: EMOJI_SIZE,
+        targetX: WIDTH / 2,
+        speed: 8
+      },
+      obstacles: [],
+      lastObstacleTime: 0,
+      obstacleInterval: 1000 // ms between obstacles
+    };
+
+    // Player object
+    class Player {
+      constructor(x, y, size) {
+        this.x = x;
+        this.y = y;
+        this.size = size;
+        this.targetX = x;
+        this.speed = 8;
+      }
+
+      update() {
+        // Smooth movement towards target
+        const dx = this.targetX - this.x;
+        if (Math.abs(dx) > 1) {
+          this.x += dx * 0.15;
+        }
+
+        // Keep in bounds
+        this.x = Math.max(this.size / 2, Math.min(WIDTH - this.size / 2, this.x));
+      }
+
+      moveTo(x) {
+        this.targetX = x;
+      }
+
+      draw() {
+        ctx.font = `${this.size}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(PLAYER_EMOJI, this.x, this.y);
+      }
+
+      getBounds() {
+        return {
+          x: this.x - this.size / 3,
+          y: this.y - this.size / 3,
+          width: this.size * 0.66,
+          height: this.size * 0.66
+        };
+      }
+    }
+
+    // Obstacle object
+    class Obstacle {
+      constructor(x) {
+        this.x = x;
+        this.y = -EMOJI_SIZE;
+        this.size = EMOJI_SIZE;
+        this.speed = 3 + Math.random() * 2; // Random speed between 3-5
+      }
+
+      update() {
+        this.y += this.speed;
+      }
+
+      draw() {
+        ctx.font = `${this.size}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(OBSTACLE_EMOJI, this.x, this.y);
+      }
+
+      getBounds() {
+        return {
+          x: this.x - this.size / 3,
+          y: this.y - this.size / 3,
+          width: this.size * 0.66,
+          height: this.size * 0.66
+        };
+      }
+
+      isOffScreen() {
+        return this.y > HEIGHT + this.size;
+      }
+    }
+
+    // Collision detection
+    function checkCollision(rect1, rect2) {
+      return rect1.x < rect2.x + rect2.width &&
+             rect1.x + rect1.width > rect2.x &&
+             rect1.y < rect2.y + rect2.height &&
+             rect1.y + rect1.height > rect2.y;
+    }
+
+    // Initialize game
+    function initGame() {
+      gameState = {
+        running: true,
+        startTime: Date.now(),
+        timeLeft: GAME_DURATION,
+        score: 0,
+        player: new Player(WIDTH / 2, HEIGHT - 100, EMOJI_SIZE),
+        obstacles: [],
+        lastObstacleTime: Date.now(),
+        obstacleInterval: 1000
+      };
+
+      gameOverEl.classList.remove('show');
+      updateUI();
+    }
+
+    // Update UI
+    function updateUI() {
+      timerEl.textContent = `Time: ${Math.ceil(gameState.timeLeft)}s`;
+      scoreEl.textContent = `Score: ${gameState.score}`;
+    }
+
+    // Spawn obstacle
+    function spawnObstacle() {
+      const margin = EMOJI_SIZE;
+      const x = margin + Math.random() * (WIDTH - margin * 2);
+      gameState.obstacles.push(new Obstacle(x));
+    }
+
+    // Game over
+    function endGame(won) {
+      gameState.running = false;
+
+      messageEl.textContent = won ? WIN_MESSAGE : LOSE_MESSAGE;
+      finalScoreEl.textContent = `Final Score: ${gameState.score}`;
+      gameOverEl.classList.add('show');
+    }
+
+    // Update game state
+    function update() {
+      if (!gameState.running) return;
+
+      const now = Date.now();
+      const elapsed = (now - gameState.startTime) / 1000;
+      gameState.timeLeft = Math.max(0, GAME_DURATION - elapsed);
+
+      // Check win condition
+      if (gameState.timeLeft <= 0) {
+        endGame(true);
+        return;
+      }
+
+      // Update player
+      gameState.player.update();
+
+      // Spawn obstacles
+      if (now - gameState.lastObstacleTime > gameState.obstacleInterval) {
+        spawnObstacle();
+        gameState.lastObstacleTime = now;
+
+        // Gradually increase difficulty
+        gameState.obstacleInterval = Math.max(500, 1000 - elapsed * 20);
+      }
+
+      // Update obstacles
+      const playerBounds = gameState.player.getBounds();
+
+      for (let i = gameState.obstacles.length - 1; i >= 0; i--) {
+        const obstacle = gameState.obstacles[i];
+        obstacle.update();
+
+        // Check collision
+        if (checkCollision(playerBounds, obstacle.getBounds())) {
+          endGame(false);
+          return;
+        }
+
+        // Remove off-screen obstacles and increment score
+        if (obstacle.isOffScreen()) {
+          gameState.obstacles.splice(i, 1);
+          gameState.score++;
+        }
+      }
+
+      updateUI();
+    }
+
+    // Render game
+    function render() {
+      // Clear canvas
+      ctx.fillStyle = '#f0f0f0';
+      ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+      // Draw obstacles
+      gameState.obstacles.forEach(obstacle => obstacle.draw());
+
+      // Draw player
+      gameState.player.draw();
+    }
+
+    // Game loop
+    function gameLoop() {
+      update();
+      render();
+      requestAnimationFrame(gameLoop);
+    }
+
+    // Input handling
+    function handleInput(x, y) {
+      if (!gameState.running) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = WIDTH / rect.width;
+      const canvasX = (x - rect.left) * scaleX;
+
+      gameState.player.moveTo(canvasX);
+    }
+
+    // Event listeners
+    canvas.addEventListener('click', (e) => {
+      handleInput(e.clientX, e.clientY);
+    });
+
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      handleInput(touch.clientX, touch.clientY);
+    });
+
+    canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      handleInput(touch.clientX, touch.clientY);
+    });
+
+    restartBtn.addEventListener('click', () => {
+      initGame();
+    });
+
+    // Start game
+    initGame();
+    gameLoop();
+  </script>
+</body>
+</html>

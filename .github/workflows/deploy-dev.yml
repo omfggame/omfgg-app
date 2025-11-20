@@ -1,0 +1,21 @@
+name: Deploy to Dev/Staging (HuggingFace)
+
+on:
+  push:
+    branches: [dev]
+  workflow_dispatch:
+
+jobs:
+  deploy-dev:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: Push to HuggingFace Dev Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: git push --force https://omfggame:$HF_TOKEN@huggingface.co/spaces/omfggame/omfgg-dev HEAD:main
