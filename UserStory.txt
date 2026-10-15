@@ -1,0 +1,113 @@
+User Story?
+
+Hockey Go Time
+My kids have hockey games nearly every weekend. <date image>
+
+And they always ask: When do we need to leave?
+<kids font yelling When do we need to leave???>
+<kids clock>
+
+To answer that:
+I have to look up the schedule
+ffmpeg -i ScahaSchedule.mp4 -vf "fps=10,scale=320:-1:flags=lanczos" ScahaSchedule.gif
+
+<Dates>
+
+Find the game time
+<time>
+
+what rink we are playing at
+<venue>
+
+switch to Google maps
+Select 'arrive by' in Google Maps, subtract 60-70 minutes for arrival for warm ups, and choose the target time.
+
+Paste the rink
+Select 'arrive by'
+Pick the date
+mentally subtract 60 minutes for warm up arrival time
+choose the target time
+
+6:05 AM!!!
+
+Whew!  
+
+What if I made that into an app?
+<thinking emoji zooms from small to blowing out the screen>
+
+This is Hockey Go Time
+< logo >
+
+Using your preferences on the side, 
+
+HGT fetches the schedule
+(show currently supports
+SCAHA = SOUTHERN CALIFORNIA AMATEUR HOCKEY ASSOCIATION
+PGHL = Pacific Girls Hockey League)
+
+finds the next game, venue, rink, and 
+whether your home or away
+
+The power is the mapping:
+
+<kids font yelling When do we need to leave???>
+
+We reach out to google maps, estimate travel time, then use the traffic aware feature in gmaps to iterate a more accurate, yet convervative, leave time.  The link to google maps is there to open up the app on your phone for real time guidance.
+
+Using the preferences on the left for when to get ready, or when to set the alarm clock
+
+chat with your hockey schedule using friendly words like
+we
+our next game
+our team
+Sunday's game
+< circle we, our, next, Sunday >
+
+(click one of the handy first time user prompts)
+
+HGT can also surface player stats, team stats, and we are working on so much more.
+
+Hockey Go Time!
+
+Set Your Preferences
+HGT fetches the schedule
+Finds the next game, venue, rink, 
+and whether your home or away
+The maps using Traffic history to give a convservative time to leave
+
+To create a compelling 1-minute demo video script, focus on clarity, impact, and brevity. Here’s a quick formula:
+1-minute Demo Script Structure:
+0-10 seconds: Hook — brief intro and problem statement.
+10-30 seconds: Showcase key feature(s) or capabilities.
+30-50 seconds: Highlight how it solves the problem or benefits users.
+50-60 seconds: Call-to-action or next steps.
+Example Template:
+“Hi, I’m [Name], and here’s [App/Agent Name], solving [problem].”
+“Watch how it [demonstrate main feature].”
+“This means [benefit/outcome], saving you [time/cost/effort].”
+“Try it yourself at [URL] or contact me to learn more.”
+Keep sentences short and conversational. Use screen capture or live-action footage synced with script. End with a clear visual call-to-action screen or contact info. Rehearse to fit timing precisely while sounding natural.
+
+Find the game time
+what rink we are playing at
+switch to Google maps
+
+
+Here's my slides, without the timing dialed into the talk track:
+
+https://youtu.be/bIR249KcQ3k
+
+I've got a few seconds of wiggle room to stretch and tighten to make it all work.
+
+And when you're ready to leave, click google maps link for real time guidance.
+
+ffmpeg -i HGT_Capstone_1.06.mov -filter:v "setpts=PTS/1.10" -filter:a "atempo=1.10" -c:v libx264 -c:a aac HGT_Capstone_60s.mov
+
+Anime style female agent engineer in a futuristic lab setting, wearing hockey gear, holding a hockey stick with neon lights and advanced computers in the background. Dynamic and energetic atmosphere representing hockey time for agent engineers.
+
+9/21 for knowledge quest
+10/4 for knowledge quest
+10/4 for Hockey Go Time
+10/6 for capstone progress
+10/13 for capstone progress
+
